@@ -1,33 +1,43 @@
+import 'dart:io';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:audioplayers/audioplayers.dart';
-import '../data/models/word_card.dart';
-import 'audio_cache_service.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class TtsService {
   final FlutterTts _tts = FlutterTts();
-  final AudioPlayer _player = AudioPlayer();
-  final AudioCacheService _cache = AudioCacheService();
 
-  Future<void> init({String voice = 'en-US'}) async {
-    await _tts.setLanguage(voice);
-    await _tts.setSpeechRate(0.45);
-    await _tts.setVolume(1.0);
+  Future<void> init(String voice) async {
+    await _tts.setLanguage(voice); // "en-US" / "en-GB"
+    await _tts.setSpeechRate(0.4);
+    await _tts.setPitch(1.0);
   }
 
-  Future<void> playWord(WordCard w, String voiceCode) async {
-    await init(voice: voiceCode);
-    final exists = await _cache.exists(w.word, voiceCode);
-    if (exists) {
-      final f = await _cache.fileFor(w.word, voiceCode);
-      await _player.stop();
-      await _player.play(DeviceFileSource(f.path));
-      await _cache.touchAccess(f);
-    } else {
-      // Fallback to live TTS; TODO: persist audio to file when supported
-      await _tts.stop();
-      await _tts.speak(w.word);
+  Future<Directory> _audioDir() async {
+    final base = await getApplicationCacheDirectory();
+    final dir = Directory(p.join(base.path, 'audio'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
     }
-    // Optionally run cache cleaning in background
-    _cache.cleanCacheIfNeeded();
+    return dir;
+  }
+
+  String _safeName(String word, String voice) {
+    final safeWord = word.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final safeVoice = voice.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    return '${safeWord}_${safeVoice}.mp3';
+  }
+
+  Future<File> generateAndCache(String word, String voice) async {
+    await init(voice);
+    final dir = await _audioDir();
+    final file = File(p.join(dir.path, _safeName(word, voice)));
+    if (await file.exists()) return file;
+    try {
+      await _tts.synthesizeToFile(word, file.path);
+    } catch (_) {
+      // 回退方案：直接 speak（不落盘）
+      await _tts.speak(word);
+    }
+    return file;
   }
 }

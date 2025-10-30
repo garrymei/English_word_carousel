@@ -3,11 +3,11 @@ import 'package:flutter/foundation.dart';
 import '../data/models/carousel_config.dart';
 import '../data/models/word_card.dart';
 import '../data/repositories/word_repository.dart';
-import '../services/tts_service.dart';
+import '../services/audio_cache_service.dart';
 
 class CarouselProvider extends ChangeNotifier {
   final _repo = WordRepository();
-  final _tts = TtsService();
+  final AudioCacheService _audio = AudioCacheService();
   List<WordCard> playingDeck = [];
   int currentIndex = 0;
   Timer? _timer;
@@ -29,6 +29,8 @@ class CarouselProvider extends ChangeNotifier {
     isPlaying = true;
     currentIndex = 0;
     _computeSessionEnd();
+    // 预加载音频（异步），不阻塞播放
+    _audio.preloadDeck(playingDeck, cfg.voice);
     _playCurrentIfNeeded();
     _scheduleNextTick();
     notifyListeners();
@@ -72,7 +74,7 @@ class CarouselProvider extends ChangeNotifier {
   void _playCurrentIfNeeded() {
     if (!cfg.autoPlaySound || playingDeck.isEmpty) return;
     final current = playingDeck[currentIndex];
-    _tts.playWord(current, cfg.voice);
+    _audio.playWord(current, cfg.voice);
   }
 
   void pause() {
