@@ -24,6 +24,13 @@ class TagDAO {
     return rows.map((e) => Tag.fromDbMap(e)).toList();
   }
 
+  Future<Tag?> findById(String id) async {
+    final db = await AppDatabase.instance.database;
+    final rows = await db.query('tags', where: 'id = ?', whereArgs: [id]);
+    if (rows.isEmpty) return null;
+    return Tag.fromDbMap(rows.first);
+  }
+
   Future<void> setTagsForWord(String wordId, List<String> tagIds) async {
     final db = await AppDatabase.instance.database;
     await db.transaction((txn) async {

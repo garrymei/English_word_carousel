@@ -11,6 +11,8 @@ class TagRepository {
     return _cache!;
   }
 
+  Future<Tag?> findById(String id) => _dao.findById(id);
+
   Future<void> create(Tag t) async {
     await _dao.insertTag(t);
     _cache = null;
@@ -18,6 +20,16 @@ class TagRepository {
 
   Future<void> update(Tag t) async {
     await _dao.updateTag(t);
+    _cache = null;
+  }
+
+  Future<void> upsert(Tag t) async {
+    final existing = await _dao.findById(t.id);
+    if (existing == null) {
+      await _dao.insertTag(t);
+    } else {
+      await _dao.updateTag(t);
+    }
     _cache = null;
   }
 
