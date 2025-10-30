@@ -1,0 +1,42 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+build/
+flutter_*.symlinks/
+**/GeneratedPluginRegistrant.*
+
+# iOS/macOS
+ios/Pods/
+macos/Pods/
+*.xcworkspace
+*.xcodeproj/*
+DerivedData/
+
+# Android
+android/.gradle/
+android/app/build/
+
+# VS Code
+.vscode/
+
+# IntelliJ/Android Studio
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+
+# Assets cache
+assets/*.temp
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+
+# Misc
+pubspec.lock
