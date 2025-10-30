@@ -19,16 +19,19 @@ class AppDatabase {
     final dbPath = p.join(dir.path, 'ewc.sqlite');
     return openDatabase(
       dbPath,
-      version: 1,
+      version: 2,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: (db, version) async {
         await _createV1(db);
-        await db.execute('PRAGMA user_version = 1');
+        await _migrateToV2(db);
+        await db.execute('PRAGMA user_version = 2');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // future migrations
+        if (oldVersion < 2) {
+          await _migrateToV2(db);
+        }
       },
     );
   }
@@ -73,5 +76,10 @@ CREATE TABLE IF NOT EXISTS word_card_tags (
     await db.execute('CREATE INDEX IF NOT EXISTS idx_word_cards_enabled ON word_cards(enabled);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_word_card_tags_tag ON word_card_tags(tag_id);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_word_card_tags_word ON word_card_tags(word_id);');
+  }
+
+  Future<void> _migrateToV2(Database db) async {
+    await db.execute('ALTER TABLE word_cards ADD COLUMN audio_us TEXT');
+    await db.execute('ALTER TABLE word_cards ADD COLUMN audio_uk TEXT');
   }
 }

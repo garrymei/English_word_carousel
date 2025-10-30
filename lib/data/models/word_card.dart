@@ -32,6 +32,8 @@ class WordCard {
   List<String> tagIds; // app 层缓存
   DateTime createdAt;
   DateTime updatedAt;
+  String? audioPathUs;
+  String? audioPathUk;
 
   WordCard({
     required this.id,
@@ -46,6 +48,8 @@ class WordCard {
     this.tagIds = const [],
     DateTime? createdAt,
     DateTime? updatedAt,
+    this.audioPathUs,
+    this.audioPathUk,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -62,24 +66,28 @@ class WordCard {
         'tag_ids': tagIds,
         'created_at': createdAt.millisecondsSinceEpoch,
         'updated_at': updatedAt.millisecondsSinceEpoch,
+        'audio_us': audioPathUs,
+        'audio_uk': audioPathUk,
       };
 
   factory WordCard.fromJson(Map<String, dynamic> j) => WordCard(
-        id: j['id'],
-        word: j['word'] ?? '',
-        phonetic: j['phonetic'] ?? '',
-        chinese: j['chinese'] ?? '',
-        sentenceEn: j['sentence_en'] ?? '',
-        sentenceCn: j['sentence_cn'] ?? '',
-        relatedEnabled: (j['related_enabled'] ?? false) == true,
-        related: (j['related'] as List? ?? [])
-            .map((e) => RelatedWord.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-        enabled: (j['enabled'] ?? true) == true,
-        tagIds: (j['tag_ids'] as List? ?? []).map((e) => e.toString()).toList(),
-        createdAt: DateTime.fromMillisecondsSinceEpoch(j['created_at'] ?? DateTime.now().millisecondsSinceEpoch),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(j['updated_at'] ?? DateTime.now().millisecondsSinceEpoch),
-      );
+    id: j['id'],
+    word: j['word'] ?? '',
+    phonetic: j['phonetic'] ?? '',
+    chinese: j['chinese'] ?? '',
+    sentenceEn: j['sentence_en'] ?? '',
+    sentenceCn: j['sentence_cn'] ?? '',
+    relatedEnabled: (j['related_enabled'] ?? false) == true,
+    related: (j['related'] as List? ?? [])
+        .map((e) => RelatedWord.fromJson(Map<String, dynamic>.from(e)))
+        .toList(),
+    enabled: (j['enabled'] ?? true) == true,
+    tagIds: (j['tag_ids'] as List? ?? []).map((e) => e.toString()).toList(),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(j['created_at'] ?? DateTime.now().millisecondsSinceEpoch),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(j['updated_at'] ?? DateTime.now().millisecondsSinceEpoch),
+    audioPathUs: j['audio_us'] as String?,
+    audioPathUk: j['audio_uk'] as String?,
+  );
 
   Map<String, dynamic> toDbMap() => {
         'id': id,
@@ -93,6 +101,8 @@ class WordCard {
         'enabled': enabled ? 1 : 0,
         'created_at': createdAt.millisecondsSinceEpoch,
         'updated_at': updatedAt.millisecondsSinceEpoch,
+        'audio_us': audioPathUs,
+        'audio_uk': audioPathUk,
       };
 
   factory WordCard.fromDbMap(Map<String, Object?> m) => WordCard(
@@ -110,5 +120,7 @@ class WordCard {
         tagIds: const [],
         createdAt: DateTime.fromMillisecondsSinceEpoch((m['created_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch),
         updatedAt: DateTime.fromMillisecondsSinceEpoch((m['updated_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch),
+        audioPathUs: m['audio_us'] as String?,
+        audioPathUk: m['audio_uk'] as String?,
       );
 }
