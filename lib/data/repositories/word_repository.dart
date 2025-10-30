@@ -48,8 +48,16 @@ class WordRepository {
     int count = 0;
     for (final item in list) {
       final j = Map<String, dynamic>.from(item);
-      final id = j['id'] ?? _uuid.v4();
+      final id = (j['id'] ?? _uuid.v4()).toString();
+      // Ensure tagIds exist to avoid FK violations
+      final rawTagIds = (j['tag_ids'] as List? ?? []).map((e) => e.toString()).toSet().toList();
+      final validTagIds = <String>[];
+      for (final tid in rawTagIds) {
+        final exists = await _tagDao.findById(tid) != null;
+        if (exists) validTagIds.add(tid);
+      }
       final w = WordCard.fromJson({...j, 'id': id});
+      w.tagIds = validTagIds;
       await create(w);
       count++;
     }
@@ -91,7 +99,30 @@ class WordRepository {
       }
     }
 
+    // validate tag references against provided tags and DB
+    final referencedTagIds = <String>{};
+    for (final wj in wordsJson) {
+      final ids = (wj['tag_ids'] as List? ?? []).map((e) => e.toString());
+      referencedTagIds.addAll(ids);
+    }
+    final providedTagIds = tagsJson.map((tj) => (tj['id']).toString()).toSet();
+
+    final missingCandidates = referencedTagIds.difference(providedTagIds);
     final db = await AppDatabase.instance.database;
+    if (missingCandidates.isNotEmpty) {
+      final placeholders = List.filled(missingCandidates.length, '?').join(',');
+      final rows = await db.query(
+        'tags',
+        columns: ['id'],
+        where: 'id IN ($placeholders)',
+        whereArgs: missingCandidates.toList(),
+      );
+      final existingIds = rows.map((r) => (r['id'] as String)).toSet();
+      final unknown = missingCandidates.difference(existingIds);
+      if (unknown.isNotEmpty) {
+        throw FormatException('Unknown tag_ids referenced: ${unknown.join(', ')}');
+      }
+    }
     int imported = 0;
 
     // If very large, paginate multiple transactions to avoid giant TX
