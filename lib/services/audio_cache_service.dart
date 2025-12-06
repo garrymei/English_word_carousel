@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -14,6 +15,10 @@ class AudioCacheService {
   final TtsService _tts = TtsService();
 
   Future<Directory> _cacheDir() async {
+    // Web 环境不支持文件系统缓存目录，直接返回抛出以防误用
+    if (kIsWeb) {
+      throw UnsupportedError('Audio cache is not supported on Web.');
+    }
     final base = await getApplicationCacheDirectory();
     final dir = Directory(p.join(base.path, 'audio'));
     if (!await dir.exists()) {
@@ -34,6 +39,12 @@ class AudioCacheService {
   }
 
   Future<void> playWord(WordCard w, String voice) async {
+    // Web 上直接使用 TTS 播放，不进行文件缓存
+    if (kIsWeb) {
+      await _tts.speakDirect(w.word, voice);
+      return;
+    }
+
     final f = await _fileFor(w.word, voice);
     if (await f.exists()) {
       await _player.stop();
@@ -44,11 +55,13 @@ class AudioCacheService {
       await _player.stop();
       await _player.play(DeviceFileSource(newFile.path));
     }
-    // 后台执行缓存清理
+    // 后台执行缓存清理（非 Web）
     cleanCacheIfNeeded();
   }
 
   Future<void> preloadDeck(List<WordCard> deck, String voice) async {
+    // Web 不做预缓存，避免文件操作
+    if (kIsWeb) return;
     for (final w in deck) {
       try { await _tts.generateAndCache(w.word, voice); } catch (_) {}
     }
@@ -61,6 +74,7 @@ class AudioCacheService {
   }
 
   Future<void> cleanCacheIfNeeded() async {
+    if (kIsWeb) return; // Web 无缓存清理
     final dir = await _cacheDir();
     if (!await dir.exists()) return;
     final files = dir.listSync().whereType<File>().toList()

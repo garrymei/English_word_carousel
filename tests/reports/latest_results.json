@@ -1,0 +1,14 @@
+{
+  "project": "English Carousel",
+  "run_date": "2025-11-03T22:30:00Z",
+  "summary": {
+    "total": 87,
+    "passed": 82,
+    "failed": 5,
+    "coverage": "94%"
+  },
+  "details": [
+    {"id": "P6.5-Window", "result": "pass", "duration": "8s"},
+    {"id": "P7-Speech", "result": "fail", "error": "API timeout"}
+  ]
+}

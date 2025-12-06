@@ -1,0 +1,22 @@
+version: 1.0
+suite: Security
+checks:
+  - id: https
+    title: Enforce HTTPS for audio upload
+    expected:
+      - transport: https_only
+      - auth: jwt_required
+  - id: storage_signed_url
+    title: Temporary signed URLs for storage
+    expected:
+      - expiry_minutes: 15
+      - signature_valid: true
+  - id: rate_limit_queue
+    title: Model calls rate-limit + async queue
+    expected:
+      - rate_limit: enabled
+      - queue_processing: async
+  - id: incremental_sync
+    title: Incremental sync every 30 min
+    expected:
+      - schedule: "*/30 * * * *"

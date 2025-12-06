@@ -1,0 +1,23 @@
+{
+  "info": {
+    "name": "Leaderboard Global",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Global weekly leaderboard",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{TOKEN}}"}
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/leaderboard/global?period=weekly",
+          "host": ["{{BASE_URL}}"],
+          "path": ["leaderboard", "global"],
+          "query": [{"key": "period", "value": "weekly"}]
+        }
+      }
+    }
+  ]
+}

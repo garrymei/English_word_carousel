@@ -1,8 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 import '../db.dart';
 import '../models/tag.dart';
+import 'tag_dao_base.dart';
 
-class TagDAO {
+class TagDAO implements TagDAOBase {
   Future<void> insertTag(Tag t) async {
     final db = await AppDatabase.instance.database;
     await db.insert('tags', t.toDbMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -18,9 +19,10 @@ class TagDAO {
     await db.delete('tags', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<List<Tag>> listAll() async {
+  Future<List<Tag>> listAll({String? userId}) async {
     final db = await AppDatabase.instance.database;
-    final rows = await db.query('tags', orderBy: 'created_at DESC');
+    final whereUser = userId == null ? 'user_id IS NULL' : 'user_id = ?';
+    final rows = await db.query('tags', where: whereUser, whereArgs: userId == null ? null : [userId], orderBy: 'created_at DESC');
     return rows.map((e) => Tag.fromDbMap(e)).toList();
   }
 

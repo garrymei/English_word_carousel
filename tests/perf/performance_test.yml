@@ -1,0 +1,13 @@
+version: 1.0
+suite: Performance
+cases:
+  - id: startup
+    title: Cold start time
+    steps:
+      - run: "flutter run -d web-server --web-port 8080 lib/main.dart"
+    metrics:
+      - name: startup_time_ms
+        expected_max: 3000
+    notes: |
+      Target: scoring response < 3s / leaderboard render < 1s.
+      This case measures app cold start within 3s as a baseline.

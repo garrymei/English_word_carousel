@@ -4,6 +4,7 @@ class Tag {
   String color; // #RRGGBB
   String description;
   DateTime createdAt;
+  String? userId;
 
   Tag({
     required this.id,
@@ -11,6 +12,7 @@ class Tag {
     this.color = '#3B82F6',
     this.description = '',
     DateTime? createdAt,
+    this.userId,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
@@ -19,6 +21,7 @@ class Tag {
         'color': color,
         'description': description,
         'created_at': createdAt.millisecondsSinceEpoch,
+        'user_id': userId,
       };
 
   factory Tag.fromJson(Map<String, dynamic> j) => Tag(
@@ -27,6 +30,7 @@ class Tag {
         color: j['color'] ?? '#3B82F6',
         description: j['description'] ?? '',
         createdAt: DateTime.fromMillisecondsSinceEpoch(j['created_at'] ?? DateTime.now().millisecondsSinceEpoch),
+        userId: j['user_id'] as String?,
       );
 
   Map<String, dynamic> toDbMap() => {
@@ -35,6 +39,7 @@ class Tag {
         'color': color,
         'description': description,
         'created_at': createdAt.millisecondsSinceEpoch,
+        'user_id': userId,
       };
 
   factory Tag.fromDbMap(Map<String, Object?> m) => Tag(
@@ -43,5 +48,6 @@ class Tag {
         color: (m['color'] as String?) ?? '#3B82F6',
         description: (m['description'] as String?) ?? '',
         createdAt: DateTime.fromMillisecondsSinceEpoch((m['created_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch),
+        userId: m['user_id'] as String?,
       );
 }

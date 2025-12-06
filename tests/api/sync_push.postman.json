@@ -1,0 +1,27 @@
+{
+  "info": {
+    "name": "Sync Push",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Push local changes",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{TOKEN}}"}
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/sync/push",
+          "host": ["{{BASE_URL}}"],
+          "path": ["sync", "push"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"changes\": [\n    {\n      \"type\": \"word_update\",\n      \"id\": 123,\n      \"payload\": {\"tagIds\": [1,2]}\n    }\n  ]\n}"
+        }
+      }
+    }
+  ]
+}

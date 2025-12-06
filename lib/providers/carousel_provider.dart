@@ -4,19 +4,25 @@ import '../data/models/carousel_config.dart';
 import '../data/models/word_card.dart';
 import '../data/repositories/word_repository.dart';
 import '../services/audio_cache_service.dart';
+import '../services/settings_service.dart';
+import '../services/analytics_service.dart';
 
 class CarouselProvider extends ChangeNotifier {
   final _repo = WordRepository();
   final AudioCacheService _audio = AudioCacheService();
+  final SettingsService _settings = SettingsService();
+  final AnalyticsService _analytics = AnalyticsService();
   List<WordCard> playingDeck = [];
   int currentIndex = 0;
   Timer? _timer;
   CarouselConfig cfg = CarouselConfig();
   bool isPlaying = false;
   DateTime? _sessionEnd; // 根据 durationMode 计算
+  String? _userId; // for analytics
 
-  Future<void> buildDeck({List<String>? tagIds, bool? onlyEnabled, bool? shuffle}) async {
-    playingDeck = await _repo.list(tagIds: tagIds, onlyEnabled: onlyEnabled ?? true);
+  Future<void> buildDeck({List<String>? tagIds, bool? onlyEnabled, bool? shuffle, String? userId}) async {
+    playingDeck = await _repo.list(tagIds: tagIds, onlyEnabled: onlyEnabled ?? true, userId: userId, personalOnly: true);
+    _userId = userId; // keep for analytics session
     if ((shuffle ?? cfg.shuffle) && playingDeck.isNotEmpty) {
       playingDeck.shuffle();
     }
@@ -29,6 +35,7 @@ class CarouselProvider extends ChangeNotifier {
     isPlaying = true;
     currentIndex = 0;
     _computeSessionEnd();
+    _analytics.startSession(userId: _userId);
     // 预加载音频（异步），不阻塞播放
     _audio.preloadDeck(playingDeck, cfg.voice);
     _playCurrentIfNeeded();
@@ -75,6 +82,7 @@ class CarouselProvider extends ChangeNotifier {
     if (!cfg.autoPlaySound || playingDeck.isEmpty) return;
     final current = playingDeck[currentIndex];
     _audio.playWord(current, cfg.voice);
+    _analytics.logPlay(current.id, cfg.intervalSeconds);
   }
 
   void pause() {
@@ -97,6 +105,7 @@ class CarouselProvider extends ChangeNotifier {
     isPlaying = false;
     _timer?.cancel();
     currentIndex = 0;
+    _analytics.endSession();
     notifyListeners();
   }
 
@@ -114,8 +123,14 @@ class CarouselProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadConfigFromPrefs() async {
+    final loaded = await _settings.loadConfig();
+    applyConfig(loaded);
+  }
+
   void applyConfig(CarouselConfig c) {
     cfg = c;
+    _settings.saveConfig(cfg); // persist
     if (isPlaying) {
       _computeSessionEnd();
       _scheduleNextTick();
@@ -127,6 +142,29 @@ class CarouselProvider extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _analytics.endSession();
     super.dispose();
+  }
+
+  Duration? remaining() {
+    if (_sessionEnd == null) return null;
+    final diff = _sessionEnd!.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  void reset() {
+    stop();
+    playingDeck = [];
+    currentIndex = 0;
+    notifyListeners();
+  }
+
+  void setDeck(List<WordCard> deck, {bool startPlaying = false}) {
+    playingDeck = List<WordCard>.from(deck);
+    currentIndex = 0;
+    notifyListeners();
+    if (startPlaying) {
+      start();
+    }
   }
 }

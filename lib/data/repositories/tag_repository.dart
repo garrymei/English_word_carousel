@@ -1,13 +1,16 @@
+import 'package:flutter/foundation.dart';
+import '../dao/tag_dao_base.dart';
 import '../dao/tag_dao.dart';
+import '../dao/tag_dao_web.dart';
 import '../models/tag.dart';
 
 class TagRepository {
-  final _dao = TagDAO();
+  final TagDAOBase _dao = kIsWeb ? TagDAOWeb() : TagDAO();
   List<Tag>? _cache;
 
-  Future<List<Tag>> listAll({bool forceRefresh = false}) async {
+  Future<List<Tag>> listAll({bool forceRefresh = false, String? userId}) async {
     if (_cache != null && !forceRefresh) return _cache!;
-    _cache = await _dao.listAll();
+    _cache = await _dao.listAll(userId: userId);
     return _cache!;
   }
 

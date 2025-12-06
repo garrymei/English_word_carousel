@@ -1,38 +1,52 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../dao/word_card_dao.dart';
+import '../dao/word_card_dao_sqflite.dart';
+import '../dao/word_card_dao_web.dart';
 import '../dao/tag_dao.dart';
 import '../models/word_card.dart';
 import '../models/tag.dart';
 import '../db.dart';
 
 class WordRepository {
-  final _dao = WordCardDAO();
+  final WordCardDAO _dao = kIsWeb ? WordCardDAOWeb() : WordCardDAOSqflite();
   final _tagDao = TagDAO();
   final _uuid = const Uuid();
 
-  Future<List<WordCard>> list({List<String>? tagIds, bool? onlyEnabled}) async {
-    final words = await _dao.list(tagIds: tagIds, onlyEnabled: onlyEnabled);
-    // hydrate tagIds
-    for (final w in words) {
-      final tags = await _tagDao.listByWord(w.id);
-      w.tagIds = tags.map((e) => e.id).toList();
+  Future<List<WordCard>> list({List<String>? tagIds, bool? onlyEnabled, String? userId, bool personalOnly = false}) async {
+    final words = await _dao.list(tagIds: tagIds, onlyEnabled: onlyEnabled, userId: userId, personalOnly: personalOnly);
+    if (!kIsWeb) {
+      // hydrate tagIds from link table on native platforms
+      for (final w in words) {
+        final tags = await _tagDao.listByWord(w.id);
+        w.tagIds = tags.map((e) => e.id).toList();
+      }
     }
     return words;
   }
 
   Future<void> create(WordCard w) async {
     await _dao.insertWord(w);
-    await _tagDao.setTagsForWord(w.id, w.tagIds);
+    // 在 Web 环境下不使用本地 DB 的标签关联，避免抛错导致回退到内存
+    if (!kIsWeb) {
+      await _tagDao.setTagsForWord(w.id, w.tagIds);
+    }
   }
 
   Future<void> update(WordCard w) async {
     await _dao.updateWord(w);
-    await _tagDao.setTagsForWord(w.id, w.tagIds);
+    if (!kIsWeb) {
+      await _tagDao.setTagsForWord(w.id, w.tagIds);
+    }
   }
 
   Future<void> delete(String id) async {
     await _dao.deleteWord(id);
+  }
+
+  Future<void> deleteMany(List<String> ids) async {
+    await _dao.deleteWordsByIds(ids);
   }
 
   Future<void> toggleEnabled(String id, bool enabled) async {
@@ -40,6 +54,24 @@ class WordRepository {
     if (w == null) return;
     w.enabled = enabled;
     await _dao.updateWord(w);
+  }
+
+  Future<List<WordCard>> findByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final results = <WordCard>[];
+    for (final id in ids) {
+      final w = await _dao.findById(id);
+      if (w != null) {
+        if (!kIsWeb) {
+          final tags = await _tagDao.listByWord(w.id);
+          w.tagIds = tags.map((e) => e.id).toList();
+        }
+        results.add(w);
+      }
+    }
+    // Sort by updatedAt desc to align with list()
+    results.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return results;
   }
 
   // Simple list import/export (legacy)
@@ -197,5 +229,64 @@ class WordRepository {
       });
     }
     return imported;
+  }
+
+  // ---- Sync helpers ----
+  Future<List<Map<String, dynamic>>> localChanges({DateTime? since}) async {
+    final db = await AppDatabase.instance.database;
+    final changes = <Map<String, dynamic>>[];
+    if (since != null) {
+      final wRows = await db.query('word_cards', where: 'updated_at > ?', whereArgs: [since.millisecondsSinceEpoch]);
+      final tRows = await db.query('tags', where: 'created_at > ?', whereArgs: [since.millisecondsSinceEpoch]);
+      for (final r in wRows) {
+        changes.add({'entity': 'word_card', 'action': 'update', 'data': r});
+      }
+      for (final r in tRows) {
+        changes.add({'entity': 'tag', 'action': 'update', 'data': r});
+      }
+    } else {
+      final wRows = await db.query('word_cards');
+      final tRows = await db.query('tags');
+      for (final r in wRows) {
+        changes.add({'entity': 'word_card', 'action': 'update', 'data': r});
+      }
+      for (final r in tRows) {
+        changes.add({'entity': 'tag', 'action': 'update', 'data': r});
+      }
+    }
+    return changes;
+  }
+
+  Future<void> applyRemote(Map<String, dynamic> remote) async {
+    final db = await AppDatabase.instance.database;
+    final tagsJson = List<Map<String, dynamic>>.from(remote['tags'] as List? ?? const []);
+    final wordsJson = List<Map<String, dynamic>>.from(remote['words'] as List? ?? const []);
+
+    await db.transaction((txn) async {
+      for (final tj in tagsJson) {
+        final tag = Tag.fromJson(Map<String, dynamic>.from(tj));
+        final rows = await txn.query('tags', where: 'id = ?', whereArgs: [tag.id]);
+        if (rows.isEmpty) {
+          await txn.insert('tags', tag.toDbMap());
+        } else {
+          await txn.update('tags', tag.toDbMap(), where: 'id = ?', whereArgs: [tag.id]);
+        }
+      }
+      for (final wj in wordsJson) {
+        final id = (wj['id'] ?? _uuid.v4()).toString();
+        final w = WordCard.fromJson({...wj, 'id': id});
+        final rows = await txn.query('word_cards', where: 'id = ?', whereArgs: [w.id]);
+        if (rows.isEmpty) {
+          await txn.insert('word_cards', w.toDbMap());
+        } else {
+          await txn.update('word_cards', w.toDbMap(), where: 'id = ?', whereArgs: [w.id]);
+        }
+        final tagIds = (wj['tag_ids'] as List? ?? []).map((e) => e.toString()).toList();
+        await txn.delete('word_card_tags', where: 'word_id = ?', whereArgs: [w.id]);
+        for (final tid in tagIds) {
+          await txn.insert('word_card_tags', {'word_id': w.id, 'tag_id': tid});
+        }
+      }
+    });
   }
 }

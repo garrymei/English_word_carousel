@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/tag_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../data/models/tag.dart';
 import '../../widgets/empty_state.dart';
 
@@ -14,7 +15,10 @@ class _TagListScreenState extends State<TagListScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<TagProvider>().loadTags());
+    Future.microtask(() {
+      final uid = context.read<AuthProvider>().userId;
+      return context.read<TagProvider>().loadTags(userId: uid);
+    });
   }
 
   @override
@@ -45,7 +49,8 @@ class _TagListScreenState extends State<TagListScreen> {
             builder: (_) => _TagEditDialog(),
           );
           if (res != null) {
-            await provider.create(res);
+            final uid = context.read<AuthProvider>().userId;
+            await provider.create(res, userId: uid);
           }
         },
         child: const Icon(Icons.add),

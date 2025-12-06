@@ -1,0 +1,109 @@
+{
+  "info": {
+    "name": "Phase3 Auth Test",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": {"raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"]},
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Register succeeds with token', function () {",
+              "  pm.response.to.have.status.oneOf([200,201]);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+              "  pm.environment.set('token', json.token);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"]},
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login returns token', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+              "  pm.environment.set('token', json.token);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify Token",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": {"raw": "{{baseUrl}}/auth/verify-token", "host": ["{{baseUrl}}"], "path": ["auth","verify-token"]}
+      },
+      "event": [
+        {"listen": "test", "script": {"exec": [
+          "pm.test('Token is valid', function () {",
+          "  pm.response.to.have.status(200);",
+          "});"
+        ]}}
+      ]
+    },
+    {
+      "name": "Profile",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": {"raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth","me"]}
+      },
+      "event": [
+        {"listen": "test", "script": {"exec": [
+          "pm.test('Profile accessible with token', function () {",
+          "  pm.response.to.have.status(200);",
+          "  const json = pm.response.json();",
+          "  pm.expect(json.username).to.be.a('string');",
+          "});"
+        ]}}
+      ]
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": {"raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth","logout"]}
+      },
+      "event": [
+        {"listen": "test", "script": {"exec": [
+          "pm.test('Logout returns 200 and clears token', function () {",
+          "  pm.response.to.have.status.oneOf([200,204]);",
+          "});"
+        ]}}
+      ]
+    }
+  ]
+}

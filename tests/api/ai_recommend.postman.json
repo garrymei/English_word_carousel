@@ -1,0 +1,23 @@
+{
+  "info": {
+    "name": "AI Recommend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Recommend words",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{TOKEN}}"}
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/ai/recommend?limit=10",
+          "host": ["{{BASE_URL}}"],
+          "path": ["ai", "recommend"],
+          "query": [{"key": "limit", "value": "10"}]
+        }
+      }
+    }
+  ]
+}

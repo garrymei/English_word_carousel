@@ -24,6 +24,8 @@ class WordCard {
   String word;
   String phonetic;
   String chinese;
+  String phrase;
+  String phraseCn;
   String sentenceEn;
   String sentenceCn;
   bool relatedEnabled;
@@ -34,12 +36,15 @@ class WordCard {
   DateTime updatedAt;
   String? audioPathUs;
   String? audioPathUk;
+  String? userId;
 
   WordCard({
     required this.id,
     required this.word,
     this.phonetic = '',
     required this.chinese,
+    this.phrase = '',
+    this.phraseCn = '',
     this.sentenceEn = '',
     this.sentenceCn = '',
     this.relatedEnabled = false,
@@ -50,6 +55,7 @@ class WordCard {
     DateTime? updatedAt,
     this.audioPathUs,
     this.audioPathUk,
+    this.userId,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -58,6 +64,8 @@ class WordCard {
         'word': word,
         'phonetic': phonetic,
         'chinese': chinese,
+        'phrase': phrase,
+        'phrase_cn': phraseCn,
         'sentence_en': sentenceEn,
         'sentence_cn': sentenceCn,
         'related_enabled': relatedEnabled,
@@ -68,6 +76,7 @@ class WordCard {
         'updated_at': updatedAt.millisecondsSinceEpoch,
         'audio_us': audioPathUs,
         'audio_uk': audioPathUk,
+        'user_id': userId,
       };
 
   factory WordCard.fromJson(Map<String, dynamic> j) => WordCard(
@@ -75,6 +84,8 @@ class WordCard {
     word: j['word'] ?? '',
     phonetic: j['phonetic'] ?? '',
     chinese: j['chinese'] ?? '',
+    phrase: j['phrase'] ?? '',
+    phraseCn: j['phrase_cn'] ?? '',
     sentenceEn: j['sentence_en'] ?? '',
     sentenceCn: j['sentence_cn'] ?? '',
     relatedEnabled: (j['related_enabled'] ?? false) == true,
@@ -87,6 +98,7 @@ class WordCard {
     updatedAt: DateTime.fromMillisecondsSinceEpoch(j['updated_at'] ?? DateTime.now().millisecondsSinceEpoch),
     audioPathUs: j['audio_us'] as String?,
     audioPathUk: j['audio_uk'] as String?,
+    userId: j['user_id'] as String?,
   );
 
   Map<String, dynamic> toDbMap() => {
@@ -94,6 +106,8 @@ class WordCard {
         'word': word,
         'phonetic': phonetic,
         'chinese': chinese,
+        'phrase': phrase,
+        'phrase_cn': phraseCn,
         'sentence_en': sentenceEn,
         'sentence_cn': sentenceCn,
         'related_enabled': relatedEnabled ? 1 : 0,
@@ -103,6 +117,7 @@ class WordCard {
         'updated_at': updatedAt.millisecondsSinceEpoch,
         'audio_us': audioPathUs,
         'audio_uk': audioPathUk,
+        'user_id': userId,
       };
 
   factory WordCard.fromDbMap(Map<String, Object?> m) => WordCard(
@@ -110,6 +125,8 @@ class WordCard {
         word: (m['word'] as String?) ?? '',
         phonetic: (m['phonetic'] as String?) ?? '',
         chinese: (m['chinese'] as String?) ?? '',
+        phrase: (m['phrase'] as String?) ?? '',
+        phraseCn: (m['phrase_cn'] as String?) ?? '',
         sentenceEn: (m['sentence_en'] as String?) ?? '',
         sentenceCn: (m['sentence_cn'] as String?) ?? '',
         relatedEnabled: ((m['related_enabled'] as int?) ?? 0) == 1,
@@ -122,5 +139,6 @@ class WordCard {
         updatedAt: DateTime.fromMillisecondsSinceEpoch((m['updated_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch),
         audioPathUs: m['audio_us'] as String?,
         audioPathUk: m['audio_uk'] as String?,
+        userId: m['user_id'] as String?,
       );
 }

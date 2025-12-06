@@ -1,0 +1,11 @@
+{
+  "id": "Phase3Env",
+  "name": "Phase3 Environment",
+  "values": [
+    {"key": "baseUrl", "value": "https://api.english-carousel.com", "enabled": true},
+    {"key": "token", "value": "", "enabled": true},
+    {"key": "email", "value": "testA@example.com", "enabled": true},
+    {"key": "username", "value": "GarryA", "enabled": true},
+    {"key": "password", "value": "Pass12345", "enabled": true}
+  ]
+}

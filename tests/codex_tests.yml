@@ -1,0 +1,146 @@
+version: 1.0
+project: English Carousel
+phases:
+  - id: 1
+    name: WordCard Core
+    features:
+      - id: P1-CreateCard
+        title: Create and save word card
+        type: ui
+        steps:
+          - open: Word List
+          - click: "Add +"
+          - input:
+              word: leverage
+              phonetic: "/ˈlevərɪdʒ/"
+              meaning: 利用；杠杆作用
+          - click: "Save"
+        expected:
+          - card_visible: true
+          - persist_after_restart: true
+        script: ui/carousel_test.dart::test_create_card
+
+      - id: P1-Tags
+        title: Tag creation and filter
+        type: ui
+        steps:
+          - open: Tags
+          - create_tag: "商务英语"
+          - assign_tag: "leverage"
+        expected:
+          - tag_filter_result: contains("leverage")
+        script: ui/carousel_test.dart::test_tag_filter
+
+  - id: 2
+    name: TTS & Cache
+    features:
+      - id: P2-TTS
+        title: Pronunciation auto-play
+        type: ui
+        steps:
+          - start_carousel: auto_voice_on
+        expected:
+          - audio_play: true
+          - overlap: false
+        script: ui/carousel_test.dart::test_tts_playback
+
+      - id: P2-Cache
+        title: Caching and offline playback
+        type: api
+        steps:
+          - play_word: "leverage"
+          - disconnect_network: true
+          - replay: true
+        expected:
+          - audio_cache_file_exists: true
+          - audio_play_offline: true
+        script: ui/carousel_test.dart::test_audio_cache
+
+  - id: 3
+    name: Authentication
+    features:
+      - id: P3-Register
+        title: Register user (email + username)
+        type: api
+        script: api/auth_register.postman.json
+      - id: P3-Login
+        title: Login + token persistence
+        type: api
+        script: api/auth_login.postman.json
+
+  - id: 4
+    name: Sync & Statistics
+    features:
+      - id: P4-SyncPush
+        title: Push local changes
+        type: api
+        script: api/sync_push.postman.json
+      - id: P4-Stats
+        title: Verify learning session log
+        type: ui
+        script: ui/carousel_test.dart::test_study_log
+
+  - id: 5
+    name: UI / Release / Stability
+    features:
+      - id: P5-Theme
+        title: Light/Dark theme switch
+        type: ui
+        script: ui/theme_test.dart::test_theme_switch
+      - id: P5-Build
+        title: Build cross-platform
+        type: cli
+        steps:
+          - run: "flutter build macos"
+        expected:
+          - exit_code: 0
+
+  - id: 6
+    name: AI Recommendation & Study Plan
+    features:
+      - id: P6-Recommend
+        title: AI recommend words
+        type: api
+        script: api/ai_recommend.postman.json
+      - id: P6-Plan
+        title: Create & validate study plan
+        type: ui
+        script: ui/plan_test.dart::test_plan_crud
+
+  - id: 6.5
+    name: Floating Player
+    features:
+      - id: P6.5-Window
+        title: Floating acrylic window
+        type: ui
+        script: ui/floating_window_test.dart::test_floating_mode
+      - id: P6.5-Hotkeys
+        title: Space/ESC/Arrow hotkeys
+        type: ui
+        script: ui/floating_window_test.dart::test_hotkeys
+
+  - id: 7
+    name: Speech Evaluation & Leaderboard
+    features:
+      - id: P7-Speech
+        title: Speech record & scoring
+        type: ui
+        script: ui/speech_evaluate_test.dart::test_record_and_score
+      - id: P7-Leaderboard
+        title: Leaderboard ranking
+        type: api
+        script: api/leaderboard_global.postman.json
+
+  - id: Performance
+    features:
+      - id: PERF-Startup
+        title: Cold start time
+        type: perf
+        script: perf/performance_test.yml::startup
+
+  - id: Security
+    features:
+      - id: SEC-HTTPS
+        title: Enforce HTTPS
+        type: security
+        script: security/security_audit.yml::https
